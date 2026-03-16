@@ -1,0 +1,67 @@
+aid: wasmcloud
+name: wasmCloud
+description: >-
+  wasmCloud is a CNCF incubating platform for building distributed
+  applications using WebAssembly components. It provides a runtime that
+  manages the lifecycle of WebAssembly actors and capability providers,
+  enabling developers to write portable business logic that connects to
+  infrastructure capabilities like HTTP servers, messaging, key-value
+  stores, and databases through a declarative linking model.
+url: https://wasmcloud.com
+image: https://kinlane-productions2.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+tags:
+- WebAssembly
+- Distributed Systems
+- Wasm
+- Runtime
+- Cloud Native
+- Incubating
+created: '2026-03-16'
+modified: '2026-03-16'
+specificationVersion: '0.19'
+type: Index
+apis:
+- aid: wasmcloud:wasmcloud-control-api
+  name: wasmCloud Control Interface API
+  description: >-
+    The wasmCloud control interface provides a NATS-based API for managing
+    the wasmCloud lattice. It supports operations for starting and stopping
+    actors and providers, establishing links between components, querying
+    host inventories, and managing application deployments. The wash CLI
+    and wasmCloud dashboard interact with hosts through this interface.
+  humanURL: https://wasmcloud.com/docs/
+  properties:
+  - type: Documentation
+    url: https://wasmcloud.com/docs/
+  tags:
+  - Control API
+  - NATS
+  - Lattice Management
+- aid: wasmcloud:wasmcloud-wadm-api
+  name: wasmCloud Application Deployment Manager (wadm) API
+  description: >-
+    wadm provides a declarative application deployment API for wasmCloud.
+    Applications are defined as YAML manifests specifying components,
+    capability providers, and their links. wadm manages the desired state
+    of applications across the lattice, handling scaling, updates, and
+    self-healing through reconciliation loops.
+  humanURL: https://wasmcloud.com/docs/ecosystem/wadm/
+  properties:
+  - type: Documentation
+    url: https://wasmcloud.com/docs/ecosystem/wadm/
+  tags:
+  - Deployment
+  - Declarative
+  - Application Management
+common:
+- type: Documentation
+  name: wasmCloud Documentation
+  description: Official wasmCloud documentation.
+  url: https://wasmcloud.com/docs/
+- type: GitHubOrg
+  name: wasmCloud GitHub
+  description: Source code repository.
+  url: https://github.com/wasmCloud/wasmCloud
+maintainers:
+- FN: Kin Lane
+  email: kin@apievangelist.com
