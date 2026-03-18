@@ -1,0 +1,557 @@
+asyncapi: 2.6.0
+info:
+  title: wasmCloud Lattice Events
+  version: 1.0.0
+  description: >-
+    The wasmCloud lattice event system publishes CloudEvents-format messages to
+    NATS subjects describing the lifecycle of components, capability providers,
+    links, and hosts within a wasmCloud lattice. All lattice events are published
+    on the wasmbus.evt.{lattice}.> subject hierarchy and conform to the CloudEvents
+    1.0 specification with a type prefix of com.wasmcloud.lattice. Events are used
+    by the wash dashboard, wadm reconciler, observability tools, and custom
+    integrations to react to changes in lattice state.
+  contact:
+    name: wasmCloud Community
+    url: https://wasmcloud.com/community/
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+externalDocs:
+  description: wasmCloud Cloud Event List
+  url: https://wasmcloud.com/docs/reference/cloud-event-list/
+servers:
+  nats:
+    url: 'nats://localhost:4222'
+    protocol: nats
+    description: >-
+      NATS server through which the wasmCloud lattice publishes event messages.
+      Consumers subscribe using NATS wildcard subjects to receive all events or
+      filter to specific event types.
+channels:
+  wasmbus.evt.{lattice}.>:
+    description: >-
+      Wildcard subject for all lattice events. Subscribe to this subject to
+      receive all CloudEvent messages emitted by wasmCloud hosts in the lattice.
+      Events are JSON-encoded CloudEvents with a type prefix of
+      com.wasmcloud.lattice.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+    subscribe:
+      operationId: receiveLatticeEvent
+      summary: Receive Lattice Event
+      description: >-
+        Receive any lattice event published by a wasmCloud host. Events cover
+        component and provider lifecycle, link management, configuration changes,
+        and host heartbeats. All events are JSON-encoded CloudEvents.
+      message:
+        oneOf:
+          - $ref: '#/components/messages/ComponentScaled'
+          - $ref: '#/components/messages/ComponentStartFailed'
+          - $ref: '#/components/messages/ProviderStarted'
+          - $ref: '#/components/messages/ProviderStopped'
+          - $ref: '#/components/messages/ProviderStartFailed'
+          - $ref: '#/components/messages/LinkdefSet'
+          - $ref: '#/components/messages/LinkdefDeleted'
+          - $ref: '#/components/messages/ConfigSet'
+          - $ref: '#/components/messages/ConfigDeleted'
+          - $ref: '#/components/messages/HostHeartbeat'
+          - $ref: '#/components/messages/HostStarted'
+          - $ref: '#/components/messages/HostStopped'
+          - $ref: '#/components/messages/HealthCheckPassed'
+          - $ref: '#/components/messages/HealthCheckFailed'
+      tags:
+        - name: Lattice Events
+components:
+  parameters:
+    lattice:
+      description: >-
+        The wasmCloud lattice ID identifying the lattice whose events are being
+        subscribed to. Use "default" for single-lattice deployments.
+      schema:
+        type: string
+        description: Lattice identifier.
+        default: default
+  messages:
+    ComponentScaled:
+      name: ComponentScaled
+      title: Component Scaled Event
+      summary: >-
+        Emitted when a WebAssembly component's instance count is scaled up or
+        down on a host.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ComponentScaledPayload'
+    ComponentStartFailed:
+      name: ComponentStartFailed
+      title: Component Start Failed Event
+      summary: >-
+        Emitted when a wasmCloud host fails to start a WebAssembly component.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ComponentStartFailedPayload'
+    ProviderStarted:
+      name: ProviderStarted
+      title: Provider Started Event
+      summary: >-
+        Emitted when a capability provider has successfully started on a host.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ProviderStartedPayload'
+    ProviderStopped:
+      name: ProviderStopped
+      title: Provider Stopped Event
+      summary: >-
+        Emitted when a capability provider has stopped on a host.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ProviderStoppedPayload'
+    ProviderStartFailed:
+      name: ProviderStartFailed
+      title: Provider Start Failed Event
+      summary: >-
+        Emitted when a wasmCloud host fails to start a capability provider.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ProviderStartFailedPayload'
+    LinkdefSet:
+      name: LinkdefSet
+      title: Link Definition Set Event
+      summary: >-
+        Emitted when a link definition between a component and a provider or
+        between two components is established in the lattice.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LinkdefSetPayload'
+    LinkdefDeleted:
+      name: LinkdefDeleted
+      title: Link Definition Deleted Event
+      summary: >-
+        Emitted when a link definition is removed from the lattice.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LinkdefDeletedPayload'
+    ConfigSet:
+      name: ConfigSet
+      title: Config Set Event
+      summary: >-
+        Emitted when a named configuration entry is created or updated in the
+        lattice configuration store.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ConfigSetPayload'
+    ConfigDeleted:
+      name: ConfigDeleted
+      title: Config Deleted Event
+      summary: >-
+        Emitted when a named configuration entry is deleted from the lattice
+        configuration store.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ConfigDeletedPayload'
+    HostHeartbeat:
+      name: HostHeartbeat
+      title: Host Heartbeat Event
+      summary: >-
+        Emitted periodically by each wasmCloud host containing a complete
+        inventory of all components and providers running on that host.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostHeartbeatPayload'
+    HostStarted:
+      name: HostStarted
+      title: Host Started Event
+      summary: >-
+        Emitted when a new wasmCloud host joins the lattice.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostStartedPayload'
+    HostStopped:
+      name: HostStopped
+      title: Host Stopped Event
+      summary: >-
+        Emitted when a wasmCloud host leaves the lattice gracefully.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostStoppedPayload'
+    HealthCheckPassed:
+      name: HealthCheckPassed
+      title: Health Check Passed Event
+      summary: >-
+        Emitted when a capability provider passes its periodic health check.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HealthCheckPayload'
+    HealthCheckFailed:
+      name: HealthCheckFailed
+      title: Health Check Failed Event
+      summary: >-
+        Emitted when a capability provider fails its periodic health check.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HealthCheckPayload'
+  schemas:
+    CloudEventEnvelope:
+      type: object
+      description: >-
+        CloudEvents 1.0 envelope fields common to all wasmCloud lattice events.
+        All events include these standard fields along with event-specific data.
+      required:
+        - specversion
+        - type
+        - source
+        - id
+        - time
+        - datacontenttype
+      properties:
+        specversion:
+          type: string
+          description: CloudEvents specification version, always "1.0".
+          enum:
+            - '1.0'
+        type:
+          type: string
+          description: >-
+            Event type string with prefix com.wasmcloud.lattice (e.g.,
+            com.wasmcloud.lattice.component_scaled).
+          pattern: '^com\.wasmcloud\.lattice\.'
+        source:
+          type: string
+          description: >-
+            Event source URI identifying the host that emitted the event.
+            Typically the host ID.
+        id:
+          type: string
+          description: Unique identifier for this event instance (UUID).
+          format: uuid
+        time:
+          type: string
+          format: date-time
+          description: Timestamp when the event was emitted (RFC 3339).
+        datacontenttype:
+          type: string
+          description: Content type of the data field, always application/json.
+          enum:
+            - application/json
+        data:
+          type: object
+          description: Event-specific payload data.
+    ComponentScaledPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a component_scaled lattice event.
+          properties:
+            data:
+              type: object
+              description: Component scaling event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The public key of the host on which the component was scaled.
+                component_id:
+                  type: string
+                  description: The component ID of the scaled component.
+                image_ref:
+                  type: string
+                  description: The OCI image reference of the component.
+                max_instances:
+                  type: integer
+                  description: The new maximum number of instances after scaling.
+                  minimum: 0
+                annotations:
+                  type: object
+                  description: Annotations associated with the component.
+                  additionalProperties:
+                    type: string
+    ComponentStartFailedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a component_start_failed lattice event.
+          properties:
+            data:
+              type: object
+              description: Component start failure event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The host on which the component failed to start.
+                component_id:
+                  type: string
+                  description: The component ID that failed to start.
+                image_ref:
+                  type: string
+                  description: The OCI image reference that failed to load.
+                error:
+                  type: string
+                  description: The error message describing the failure reason.
+    ProviderStartedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a provider_started lattice event.
+          properties:
+            data:
+              type: object
+              description: Provider started event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The host on which the provider started.
+                provider_id:
+                  type: string
+                  description: The component ID of the capability provider.
+                image_ref:
+                  type: string
+                  description: The OCI image reference of the provider.
+                annotations:
+                  type: object
+                  description: Annotations associated with the provider.
+                  additionalProperties:
+                    type: string
+    ProviderStoppedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a provider_stopped lattice event.
+          properties:
+            data:
+              type: object
+              description: Provider stopped event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The host from which the provider stopped.
+                provider_id:
+                  type: string
+                  description: The component ID of the stopped provider.
+                reason:
+                  type: string
+                  description: The reason the provider was stopped.
+    ProviderStartFailedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a provider_start_failed lattice event.
+          properties:
+            data:
+              type: object
+              description: Provider start failure event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The host on which the provider failed to start.
+                provider_id:
+                  type: string
+                  description: The provider ID that failed to start.
+                image_ref:
+                  type: string
+                  description: The OCI image reference that failed to load.
+                error:
+                  type: string
+                  description: Error message describing the failure.
+    LinkdefSetPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a linkdef_set lattice event.
+          properties:
+            data:
+              type: object
+              description: Link definition set event data.
+              properties:
+                source_id:
+                  type: string
+                  description: Component ID of the link source.
+                target:
+                  type: string
+                  description: Component ID or provider ID of the link target.
+                wit_namespace:
+                  type: string
+                  description: WIT interface namespace for the link.
+                wit_package:
+                  type: string
+                  description: WIT interface package for the link.
+                interfaces:
+                  type: array
+                  description: List of WIT interface names for this link.
+                  items:
+                    type: string
+                name:
+                  type: string
+                  description: Optional name for the link definition.
+    LinkdefDeletedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a linkdef_deleted lattice event.
+          properties:
+            data:
+              type: object
+              description: Link definition deleted event data.
+              properties:
+                source_id:
+                  type: string
+                  description: Component ID of the link source that was removed.
+                target:
+                  type: string
+                  description: Component ID or provider ID of the removed link target.
+                wit_namespace:
+                  type: string
+                  description: WIT interface namespace of the deleted link.
+                wit_package:
+                  type: string
+                  description: WIT interface package of the deleted link.
+                name:
+                  type: string
+                  description: Name of the deleted link definition.
+    ConfigSetPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a config_set lattice event.
+          properties:
+            data:
+              type: object
+              description: Config set event data.
+              properties:
+                config_name:
+                  type: string
+                  description: Name of the configuration entry that was set.
+    ConfigDeletedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a config_deleted lattice event.
+          properties:
+            data:
+              type: object
+              description: Config deleted event data.
+              properties:
+                config_name:
+                  type: string
+                  description: Name of the configuration entry that was deleted.
+    HostHeartbeatPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a host_heartbeat lattice event.
+          properties:
+            data:
+              type: object
+              description: Host heartbeat event data containing the full host inventory.
+              properties:
+                host_id:
+                  type: string
+                  description: The public key of the host emitting the heartbeat.
+                uptime_seconds:
+                  type: integer
+                  description: Number of seconds the host has been running.
+                  minimum: 0
+                version:
+                  type: string
+                  description: The wasmCloud host version string.
+                labels:
+                  type: object
+                  description: Key-value host labels used for scheduling affinity.
+                  additionalProperties:
+                    type: string
+                friendly_name:
+                  type: string
+                  description: Human-readable friendly name for the host.
+                components:
+                  type: array
+                  description: List of components currently running on this host.
+                  items:
+                    type: object
+                    description: A running component instance summary.
+                    properties:
+                      id:
+                        type: string
+                        description: Component ID.
+                      image_ref:
+                        type: string
+                        description: OCI image reference.
+                      max_instances:
+                        type: integer
+                        description: Maximum instance count.
+                providers:
+                  type: array
+                  description: List of capability providers currently running on this host.
+                  items:
+                    type: object
+                    description: A running provider instance summary.
+                    properties:
+                      id:
+                        type: string
+                        description: Provider component ID.
+                      image_ref:
+                        type: string
+                        description: OCI image reference.
+    HostStartedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a host_started lattice event.
+          properties:
+            data:
+              type: object
+              description: Host started event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The public key of the host that started.
+                labels:
+                  type: object
+                  description: Host labels set at startup.
+                  additionalProperties:
+                    type: string
+                friendly_name:
+                  type: string
+                  description: Human-readable friendly name for the host.
+                version:
+                  type: string
+                  description: wasmCloud host version.
+    HostStoppedPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for a host_stopped lattice event.
+          properties:
+            data:
+              type: object
+              description: Host stopped event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The public key of the host that stopped.
+                labels:
+                  type: object
+                  description: Host labels at the time of shutdown.
+                  additionalProperties:
+                    type: string
+                reason:
+                  type: string
+                  description: Reason for the host stopping.
+    HealthCheckPayload:
+      allOf:
+        - $ref: '#/components/schemas/CloudEventEnvelope'
+        - type: object
+          description: Payload for health_check_passed or health_check_failed events.
+          properties:
+            data:
+              type: object
+              description: Health check event data.
+              properties:
+                host_id:
+                  type: string
+                  description: The host ID running the provider being checked.
+                provider_id:
+                  type: string
+                  description: The provider component ID that was health checked.
+                message:
+                  type: string
+                  description: >-
+                    Health check message, typically empty on pass or an error
+                    description on failure.

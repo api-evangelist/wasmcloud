@@ -1,0 +1,730 @@
+asyncapi: 2.6.0
+info:
+  title: wasmCloud wadm Application Deployment Manager API
+  version: 1.0.0
+  description: >-
+    The wasmCloud Application Deployment Manager (wadm) API is exposed entirely
+    as a NATS service using a subject-per-operation model. All API requests and
+    responses are JSON-encoded and published on subjects following the pattern
+    wadm.api.{lattice}.{category}.{operation}. wadm manages the desired state of
+    wasmCloud applications declared as OAM manifests, performing reconciliation
+    to match observed lattice state with the declared specification. Operations
+    include storing, retrieving, deploying, and undeploying application models,
+    as well as querying deployment status.
+  contact:
+    name: wasmCloud Community
+    url: https://wasmcloud.com/community/
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+externalDocs:
+  description: wadm API Documentation
+  url: https://wasmcloud.com/docs/ecosystem/wadm/api/
+servers:
+  nats:
+    url: 'nats://localhost:4222'
+    protocol: nats
+    description: >-
+      NATS server that wadm subscribes to for receiving API requests. In
+      production deployments, this is typically the same NATS cluster used
+      by the wasmCloud lattice. Authentication uses NATS credentials or
+      NKey-based JWT authentication.
+channels:
+  wadm.api.{lattice}.model.put:
+    description: >-
+      Store a new version of an application model (OAM manifest). Model storage
+      is append-only: new versions are added to the version history. The request
+      body is the OAM manifest in YAML or JSON format. The Content-Type header
+      can be set to hint the format; if absent, wadm attempts YAML first.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+    publish:
+      operationId: putModel
+      summary: Store Application Model
+      description: >-
+        Stores a new version of an OAM application manifest in wadm. If the
+        model does not exist, it is created. If it exists, a new version is
+        appended to its version history. The manifest must include apiVersion,
+        kind, metadata, and spec fields conforming to the wasmCloud OAM schema.
+      message:
+        $ref: '#/components/messages/PutModelRequest'
+      tags:
+        - name: Models
+    subscribe:
+      operationId: putModelResponse
+      summary: Store Application Model Response
+      description: >-
+        Response to a model put request indicating success or failure and the
+        version number assigned to the stored manifest.
+      message:
+        $ref: '#/components/messages/PutModelResponse'
+      tags:
+        - name: Models
+  wadm.api.{lattice}.model.list:
+    description: >-
+      List all application models stored in the lattice with their current
+      deployment status and version information.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+    publish:
+      operationId: listModels
+      summary: List Application Models
+      description: >-
+        Returns a list of all application models stored in the wadm instance
+        for the specified lattice, including each model's name, current version,
+        deployed version, and status summary.
+      message:
+        $ref: '#/components/messages/EmptyRequest'
+      tags:
+        - name: Models
+    subscribe:
+      operationId: listModelsResponse
+      summary: List Models Response
+      description: >-
+        Response containing an array of application model summaries.
+      message:
+        $ref: '#/components/messages/ModelListResponse'
+      tags:
+        - name: Models
+  wadm.api.{lattice}.model.get.{name}:
+    description: >-
+      Retrieve all versions of a specific application model by name.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+      name:
+        $ref: '#/components/parameters/modelName'
+    publish:
+      operationId: getModel
+      summary: Get Application Model
+      description: >-
+        Retrieves all stored versions of the named application model including
+        the full OAM manifest for each version.
+      message:
+        $ref: '#/components/messages/EmptyRequest'
+      tags:
+        - name: Models
+    subscribe:
+      operationId: getModelResponse
+      summary: Get Model Response
+      description: >-
+        Response containing the model versions and their OAM manifests.
+      message:
+        $ref: '#/components/messages/ModelGetResponse'
+      tags:
+        - name: Models
+  wadm.api.{lattice}.model.del.{name}:
+    description: >-
+      Delete a specific application model and all its versions from storage.
+      If the model is currently deployed, it will be undeployed first.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+      name:
+        $ref: '#/components/parameters/modelName'
+    publish:
+      operationId: deleteModel
+      summary: Delete Application Model
+      description: >-
+        Deletes the named application model and all stored versions. If the
+        model is currently deployed, an undeploy operation is performed as
+        part of the deletion. The response indicates success, failure, or
+        noop if the model did not exist.
+      message:
+        $ref: '#/components/messages/EmptyRequest'
+      tags:
+        - name: Models
+    subscribe:
+      operationId: deleteModelResponse
+      summary: Delete Model Response
+      description: >-
+        Response indicating whether the delete succeeded, failed, or was a
+        noop because the model did not exist.
+      message:
+        $ref: '#/components/messages/DeleteModelResponse'
+      tags:
+        - name: Models
+  wadm.api.{lattice}.model.deploy.{name}:
+    description: >-
+      Deploy an application model, activating autonomous reconciliation of
+      the declared desired state against the live lattice state.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+      name:
+        $ref: '#/components/parameters/modelName'
+    publish:
+      operationId: deployModel
+      summary: Deploy Application Model
+      description: >-
+        Deploys the named application model. If a version is specified in the
+        request, that version is deployed; if the version field is empty or
+        "latest", the newest stored version is deployed. This operation is
+        idempotent: deploying an already-deployed model succeeds without error.
+        The previous deployed version is automatically replaced.
+      message:
+        $ref: '#/components/messages/DeployModelRequest'
+      tags:
+        - name: Deployments
+    subscribe:
+      operationId: deployModelResponse
+      summary: Deploy Model Response
+      description: >-
+        Response indicating deployment success or failure.
+      message:
+        $ref: '#/components/messages/DeployModelResponse'
+      tags:
+        - name: Deployments
+  wadm.api.{lattice}.model.undeploy.{name}:
+    description: >-
+      Undeploy a running application model, stopping all its components and
+      providers managed by wadm.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+      name:
+        $ref: '#/components/parameters/modelName'
+    publish:
+      operationId: undeployModel
+      summary: Undeploy Application Model
+      description: >-
+        Undeploys the named application model, stopping reconciliation and
+        removing all components and providers that were started by wadm for
+        this application. Returns success, failure, or noop if the model was
+        not deployed.
+      message:
+        $ref: '#/components/messages/EmptyRequest'
+      tags:
+        - name: Deployments
+    subscribe:
+      operationId: undeployModelResponse
+      summary: Undeploy Model Response
+      description: >-
+        Response indicating whether the undeploy succeeded, failed, or was
+        a noop.
+      message:
+        $ref: '#/components/messages/DeployModelResponse'
+      tags:
+        - name: Deployments
+  wadm.api.{lattice}.model.status.{name}:
+    description: >-
+      Query the current deployment status of an application model, including
+      the reconciliation state of each component and provider.
+    parameters:
+      lattice:
+        $ref: '#/components/parameters/lattice'
+      name:
+        $ref: '#/components/parameters/modelName'
+    publish:
+      operationId: getModelStatus
+      summary: Get Model Status
+      description: >-
+        Retrieves the current deployment status of the named application model,
+        including per-component and per-provider status indicating whether they
+        are reconciled, compensating, or in an error state.
+      message:
+        $ref: '#/components/messages/EmptyRequest'
+      tags:
+        - name: Deployments
+    subscribe:
+      operationId: getModelStatusResponse
+      summary: Get Model Status Response
+      description: >-
+        Response containing the deployment status summary for the application.
+      message:
+        $ref: '#/components/messages/ModelStatusResponse'
+      tags:
+        - name: Deployments
+components:
+  parameters:
+    lattice:
+      description: >-
+        The lattice ID (also called lattice name) that identifies the wasmCloud
+        lattice this API request targets. Defaults to "default" for single-lattice
+        deployments.
+      schema:
+        type: string
+        description: Lattice identifier string.
+        default: default
+    modelName:
+      description: >-
+        The name of the application model as defined in the metadata.name field
+        of the OAM manifest.
+      schema:
+        type: string
+        description: Application model name.
+  messages:
+    EmptyRequest:
+      name: EmptyRequest
+      title: Empty Request
+      summary: A request with no payload body.
+      contentType: application/json
+      payload:
+        type: object
+        description: Empty request payload.
+    PutModelRequest:
+      name: PutModelRequest
+      title: Put Model Request
+      summary: An OAM application manifest to store in wadm.
+      contentType: application/yaml
+      payload:
+        $ref: '#/components/schemas/OAMManifest'
+    PutModelResponse:
+      name: PutModelResponse
+      title: Put Model Response
+      summary: Response to a model storage request.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PutModelResponse'
+    ModelListResponse:
+      name: ModelListResponse
+      title: Model List Response
+      summary: List of all application model summaries.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ModelListResponse'
+    ModelGetResponse:
+      name: ModelGetResponse
+      title: Model Get Response
+      summary: All versions of a specific application model.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ModelGetResponse'
+    DeleteModelResponse:
+      name: DeleteModelResponse
+      title: Delete Model Response
+      summary: Result of a model deletion operation.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeleteModelResponse'
+    DeployModelRequest:
+      name: DeployModelRequest
+      title: Deploy Model Request
+      summary: Request to deploy or undeploy an application model version.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeployModelRequest'
+    DeployModelResponse:
+      name: DeployModelResponse
+      title: Deploy Model Response
+      summary: Result of a deploy or undeploy operation.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeployModelResponse'
+    ModelStatusResponse:
+      name: ModelStatusResponse
+      title: Model Status Response
+      summary: Current deployment status of an application model.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ModelStatusResponse'
+  schemas:
+    OAMManifest:
+      type: object
+      description: >-
+        An Open Application Model (OAM) manifest defining a wasmCloud application.
+        The manifest declares components (WebAssembly actors) and capability
+        providers along with the links and scaling traits that govern their
+        deployment across the lattice.
+      required:
+        - apiVersion
+        - kind
+        - metadata
+        - spec
+      properties:
+        apiVersion:
+          type: string
+          description: The OAM API version.
+          enum:
+            - core.oam.dev/v1beta1
+        kind:
+          type: string
+          description: The manifest kind, always Application for wasmCloud OAM manifests.
+          enum:
+            - Application
+        metadata:
+          type: object
+          description: Application metadata including name, version, and annotations.
+          properties:
+            name:
+              type: string
+              description: Unique name of the application within the lattice.
+            annotations:
+              type: object
+              description: >-
+                Key-value annotations. The version annotation specifies the
+                semantic version of the application.
+              properties:
+                version:
+                  type: string
+                  description: Semantic version of the application manifest.
+                description:
+                  type: string
+                  description: Human-readable description of the application.
+        spec:
+          type: object
+          description: The application specification containing components and their traits.
+          properties:
+            components:
+              type: array
+              description: >-
+                Array of component definitions, each specifying a WebAssembly
+                component or capability provider and its associated traits.
+              items:
+                $ref: '#/components/schemas/OAMComponent'
+    OAMComponent:
+      type: object
+      description: >-
+        A component definition in a wasmCloud OAM manifest. Components represent
+        either WebAssembly components (type: component) or capability providers
+        (type: capability).
+      required:
+        - name
+        - type
+        - properties
+      properties:
+        name:
+          type: string
+          description: >-
+            Unique name for this component within the application, used as the
+            component identifier in link definitions.
+        type:
+          type: string
+          description: >-
+            The component type: "component" for WebAssembly components or
+            "capability" for capability providers.
+          enum:
+            - component
+            - capability
+        properties:
+          $ref: '#/components/schemas/ComponentProperties'
+        traits:
+          type: array
+          description: >-
+            Array of trait definitions controlling scaling, links, and other
+            runtime behaviors for this component.
+          items:
+            $ref: '#/components/schemas/ComponentTrait'
+    ComponentProperties:
+      type: object
+      description: >-
+        Properties for a wasmCloud OAM component specifying the image reference
+        and optional configuration.
+      required:
+        - image
+      properties:
+        image:
+          type: string
+          description: >-
+            OCI image reference or file path for the WebAssembly component or
+            capability provider artifact (e.g., ghcr.io/wasmcloud/http-server:0.21.0).
+        id:
+          type: string
+          description: >-
+            Optional explicit component ID. If omitted, wadm generates an ID
+            from the application and component names.
+        config:
+          type: array
+          description: >-
+            List of named configuration references to pass to the component
+            at startup.
+          items:
+            type: object
+            description: A named configuration reference.
+            properties:
+              name:
+                type: string
+                description: Name of the configuration entry.
+              properties:
+                type: object
+                description: Inline configuration key-value pairs.
+                additionalProperties:
+                  type: string
+    ComponentTrait:
+      type: object
+      description: >-
+        A trait definition applied to a component controlling its scaling
+        behavior or links to other components and providers.
+      required:
+        - type
+        - properties
+      properties:
+        type:
+          type: string
+          description: >-
+            The trait type: spreadscaler for scaling configuration, or link
+            for establishing connections between components and providers.
+          enum:
+            - spreadscaler
+            - link
+        properties:
+          description: Trait-specific configuration properties.
+          oneOf:
+            - $ref: '#/components/schemas/SpreadScalerProperties'
+            - $ref: '#/components/schemas/LinkProperties'
+    SpreadScalerProperties:
+      type: object
+      description: >-
+        Properties for a spreadscaler trait controlling how many instances of a
+        component run and how they are distributed across hosts.
+      properties:
+        instances:
+          type: integer
+          description: >-
+            Total number of instances of this component to run across the lattice.
+          minimum: 0
+        spread:
+          type: array
+          description: >-
+            List of spread requirements specifying host affinity rules and the
+            weight of instances to place on matching hosts.
+          items:
+            type: object
+            description: A spread requirement with host affinity and weight.
+            properties:
+              name:
+                type: string
+                description: Descriptive name for this spread requirement.
+              requirements:
+                type: object
+                description: >-
+                  Key-value host label requirements. Hosts must have all
+                  specified labels to be eligible for this spread.
+                additionalProperties:
+                  type: string
+              weight:
+                type: integer
+                description: >-
+                  Relative weight of instances to place on hosts matching
+                  these requirements.
+                minimum: 1
+    LinkProperties:
+      type: object
+      description: >-
+        Properties for a link trait defining a connection between a source
+        component and a target component or capability provider.
+      required:
+        - target
+      properties:
+        namespace:
+          type: string
+          description: >-
+            The WIT interface namespace for the link (e.g., wasi, wasmcloud).
+        package:
+          type: string
+          description: >-
+            The WIT interface package for the link (e.g., http, keyvalue).
+        interfaces:
+          type: array
+          description: List of WIT interface names exposed over this link.
+          items:
+            type: string
+            description: A WIT interface name.
+        target:
+          type: object
+          description: The target component or provider of this link.
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              description: >-
+                Name of the target component as defined in the spec.components
+                array of this manifest.
+            config:
+              type: array
+              description: >-
+                Configuration entries passed to the target over this link.
+              items:
+                type: object
+                description: A named configuration reference for the link target.
+        source:
+          type: object
+          description: >-
+            Optional source configuration passed to the source component
+            side of this link.
+          properties:
+            config:
+              type: array
+              description: Configuration entries passed to the source side.
+              items:
+                type: object
+                description: A named configuration reference for the link source.
+    PutModelResponse:
+      type: object
+      description: Response from a model put operation.
+      properties:
+        result:
+          type: string
+          description: Outcome of the put operation.
+          enum:
+            - created
+            - new_version
+            - error
+        total_versions:
+          type: integer
+          description: Total number of versions stored for this model after the put.
+        current_version:
+          type: string
+          description: The version string assigned to the stored manifest.
+        name:
+          type: string
+          description: The name of the model that was stored.
+        message:
+          type: string
+          description: >-
+            Human-readable message providing context, especially for error results.
+    ModelSummary:
+      type: object
+      description: A summary of an application model with current deployment information.
+      properties:
+        name:
+          type: string
+          description: The model name.
+        version:
+          type: string
+          description: The latest stored version of the model.
+        deployed_version:
+          type: string
+          description: The version currently deployed, if any.
+        status:
+          type: string
+          description: The overall deployment status of the model.
+          enum:
+            - Undeployed
+            - Reconciling
+            - Deployed
+            - Failed
+        status_message:
+          type: string
+          description: Human-readable description of the current status.
+    ModelListResponse:
+      type: object
+      description: Response to a model list request.
+      properties:
+        models:
+          type: array
+          description: Array of model summaries for all stored application models.
+          items:
+            $ref: '#/components/schemas/ModelSummary'
+    ModelGetResponse:
+      type: object
+      description: Response containing all versions of a specific model.
+      properties:
+        name:
+          type: string
+          description: The model name.
+        versions:
+          type: array
+          description: All stored versions of this model.
+          items:
+            type: object
+            description: A versioned model entry with its OAM manifest.
+            properties:
+              version:
+                type: string
+                description: The version string.
+              deployed:
+                type: boolean
+                description: Whether this version is currently deployed.
+              manifest:
+                $ref: '#/components/schemas/OAMManifest'
+    DeleteModelResponse:
+      type: object
+      description: Response to a model delete request.
+      properties:
+        result:
+          type: string
+          description: Outcome of the delete operation.
+          enum:
+            - deleted
+            - noop
+            - error
+        message:
+          type: string
+          description: Human-readable message providing context for the result.
+        undeploy:
+          type: boolean
+          description: >-
+            Whether an undeploy operation was performed as part of the deletion
+            because the model was deployed.
+    DeployModelRequest:
+      type: object
+      description: Request body for a model deploy operation.
+      properties:
+        version:
+          type: string
+          description: >-
+            The version of the model to deploy. Use "latest" or omit to deploy
+            the newest stored version.
+    DeployModelResponse:
+      type: object
+      description: Response to a deploy or undeploy operation.
+      properties:
+        result:
+          type: string
+          description: Outcome of the deploy/undeploy operation.
+          enum:
+            - acknowledged
+            - error
+            - noop
+        message:
+          type: string
+          description: Human-readable message providing context for the result.
+    ComponentStatus:
+      type: object
+      description: Status of an individual component or provider within a deployment.
+      properties:
+        name:
+          type: string
+          description: The component name from the OAM manifest.
+        type:
+          type: string
+          description: The component type (component or capability).
+        status:
+          type: string
+          description: Reconciliation status of this component.
+          enum:
+            - Undeployed
+            - Compensating
+            - Reconciling
+            - Deployed
+            - Failed
+        traits:
+          type: array
+          description: Status of each trait applied to this component.
+          items:
+            type: object
+            description: Status of a single trait.
+            properties:
+              type:
+                type: string
+                description: The trait type.
+              status:
+                type: string
+                description: The trait reconciliation status.
+    ModelStatusResponse:
+      type: object
+      description: Current deployment status of an application model.
+      properties:
+        name:
+          type: string
+          description: The model name.
+        version:
+          type: string
+          description: The deployed version.
+        status:
+          type: string
+          description: Overall deployment status.
+          enum:
+            - Undeployed
+            - Reconciling
+            - Deployed
+            - Failed
+        components:
+          type: array
+          description: Per-component status entries.
+          items:
+            $ref: '#/components/schemas/ComponentStatus'

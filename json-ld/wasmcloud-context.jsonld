@@ -1,0 +1,162 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "wasmcloud": "https://wasmcloud.com/vocab#",
+    "schema": "https://schema.org/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "oci": "https://opencontainers.org/schema#",
+    "wasm": "https://webassembly.github.io/spec/core/vocab#",
+
+    "Application": "wasmcloud:Application",
+    "Component": "wasmcloud:Component",
+    "CapabilityProvider": "wasmcloud:CapabilityProvider",
+    "LinkDefinition": "wasmcloud:LinkDefinition",
+    "Host": "wasmcloud:Host",
+    "Lattice": "wasmcloud:Lattice",
+    "Trait": "wasmcloud:Trait",
+    "SpreadScaler": "wasmcloud:SpreadScaler",
+
+    "name": {
+      "@id": "schema:name",
+      "@type": "xsd:string"
+    },
+    "description": {
+      "@id": "schema:description",
+      "@type": "xsd:string"
+    },
+    "version": {
+      "@id": "schema:softwareVersion",
+      "@type": "xsd:string"
+    },
+    "annotations": {
+      "@id": "wasmcloud:annotations"
+    },
+    "metadata": {
+      "@id": "wasmcloud:metadata"
+    },
+
+    "apiVersion": {
+      "@id": "wasmcloud:apiVersion",
+      "@type": "xsd:string"
+    },
+    "kind": {
+      "@id": "wasmcloud:kind",
+      "@type": "xsd:string"
+    },
+    "spec": {
+      "@id": "wasmcloud:spec"
+    },
+    "components": {
+      "@id": "wasmcloud:components",
+      "@container": "@set"
+    },
+    "traits": {
+      "@id": "wasmcloud:traits",
+      "@container": "@set"
+    },
+    "properties": {
+      "@id": "wasmcloud:properties"
+    },
+
+    "image": {
+      "@id": "oci:imageRepository",
+      "@type": "@id"
+    },
+    "id": {
+      "@id": "dcterms:identifier",
+      "@type": "xsd:string"
+    },
+    "type": {
+      "@id": "wasmcloud:componentType",
+      "@type": "xsd:string"
+    },
+    "config": {
+      "@id": "wasmcloud:config",
+      "@container": "@set"
+    },
+    "secrets": {
+      "@id": "wasmcloud:secrets",
+      "@container": "@set"
+    },
+
+    "replicas": {
+      "@id": "wasmcloud:replicas",
+      "@type": "xsd:integer"
+    },
+    "spread": {
+      "@id": "wasmcloud:spread",
+      "@container": "@set"
+    },
+    "requirements": {
+      "@id": "wasmcloud:requirements"
+    },
+    "weight": {
+      "@id": "wasmcloud:weight",
+      "@type": "xsd:integer"
+    },
+
+    "source_id": {
+      "@id": "wasmcloud:sourceId",
+      "@type": "xsd:string"
+    },
+    "target": {
+      "@id": "wasmcloud:target"
+    },
+    "namespace": {
+      "@id": "wasmcloud:witNamespace",
+      "@type": "xsd:string"
+    },
+    "package": {
+      "@id": "wasmcloud:witPackage",
+      "@type": "xsd:string"
+    },
+    "interfaces": {
+      "@id": "wasmcloud:witInterfaces",
+      "@container": "@set"
+    },
+
+    "host_id": {
+      "@id": "wasmcloud:hostId",
+      "@type": "xsd:string"
+    },
+    "friendly_name": {
+      "@id": "schema:name",
+      "@type": "xsd:string"
+    },
+    "uptime_seconds": {
+      "@id": "wasmcloud:uptimeSeconds",
+      "@type": "xsd:integer"
+    },
+    "labels": {
+      "@id": "schema:keywords",
+      "@container": "@set"
+    },
+    "providers": {
+      "@id": "wasmcloud:providers",
+      "@container": "@set"
+    },
+
+    "accepted": {
+      "@id": "wasmcloud:accepted",
+      "@type": "xsd:boolean"
+    },
+    "error": {
+      "@id": "schema:error",
+      "@type": "xsd:string"
+    },
+
+    "url": {
+      "@id": "schema:url",
+      "@type": "@id"
+    },
+    "created": {
+      "@id": "dcterms:created",
+      "@type": "xsd:date"
+    },
+    "modified": {
+      "@id": "dcterms:modified",
+      "@type": "xsd:date"
+    }
+  }
+}

@@ -1,0 +1,746 @@
+asyncapi: 2.6.0
+info:
+  title: wasmCloud Control Interface API
+  description: >-
+    AsyncAPI specification for the wasmCloud Control Interface, a NATS-based
+    API for managing the wasmCloud lattice. Operators and tooling (wash CLI,
+    wasmCloud dashboard, wadm) interact with wasmCloud hosts by publishing
+    requests to well-known NATS subjects under the wasmbus.ctl.v1.{lattice}
+    prefix. Hosts respond with typed JSON payloads. The interface supports
+    starting and stopping components and providers, querying host inventories,
+    linking components to providers, and scaling application instances.
+  version: '1.0'
+  contact:
+    name: wasmCloud Community
+    url: https://wasmcloud.com/community/
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+externalDocs:
+  description: wasmCloud Control Interface Documentation
+  url: https://wasmcloud.com/docs/hosts/lattice-protocols/control-interface/
+servers:
+  natsServer:
+    url: '{natsUrl}'
+    protocol: nats
+    description: >-
+      NATS server used as the message broker for the wasmCloud lattice.
+      All control interface messages are published and subscribed on this
+      server. For local development wash uses an embedded NATS server on
+      port 4222.
+    variables:
+      natsUrl:
+        default: nats://localhost:4222
+        description: NATS server connection URL
+    security:
+      - natsCredentials: []
+channels:
+  wasmbus.ctl.v1.{lattice}.host.get:
+    description: >-
+      Query channel for retrieving the list of all wasmCloud hosts participating
+      in the lattice. The response is an array of host summary objects including
+      host IDs, friendly names, uptime, and version information.
+    parameters:
+      lattice:
+        description: The lattice identifier, typically the NATS account name
+        schema:
+          type: string
+    publish:
+      operationId: getHosts
+      summary: Query all hosts in the lattice
+      description: >-
+        Publish an empty request to this subject to retrieve a list of all
+        wasmCloud hosts currently participating in the specified lattice.
+        The requesting client provides a reply-to subject; each host responds
+        with its summary.
+      message:
+        $ref: '#/components/messages/EmptyRequest'
+    subscribe:
+      operationId: receiveHostList
+      summary: Receive host summary responses
+      description: >-
+        Each host in the lattice responds to the get hosts request by publishing
+        its HostSummary to the reply-to subject. Collect responses until the
+        timeout to build the complete host list.
+      message:
+        $ref: '#/components/messages/HostSummaryResponse'
+
+  wasmbus.ctl.v1.{lattice}.host.{hostId}.inv:
+    description: >-
+      Query channel for retrieving the inventory of a specific wasmCloud host.
+      Returns all running components (actors) and capability providers on
+      the host, along with their metadata.
+    parameters:
+      lattice:
+        description: The lattice identifier
+        schema:
+          type: string
+      hostId:
+        description: The public key (nkey) of the target wasmCloud host
+        schema:
+          type: string
+    publish:
+      operationId: getHostInventory
+      summary: Query a host for its running inventory
+      description: >-
+        Publish to this subject to retrieve the complete inventory of a
+        specific wasmCloud host, including all running components and
+        capability providers with their IDs, images, and link names.
+      message:
+        $ref: '#/components/messages/EmptyRequest'
+    subscribe:
+      operationId: receiveHostInventory
+      summary: Receive host inventory response
+      description: >-
+        The target host responds with its full inventory including running
+        components, capability providers, and their associated metadata.
+      message:
+        $ref: '#/components/messages/HostInventoryResponse'
+
+  wasmbus.ctl.v1.{lattice}.component.scale.{hostId}:
+    description: >-
+      Command channel for scaling a WebAssembly component on a specific
+      wasmCloud host. Scaling to 0 stops all instances; scaling to a positive
+      integer sets the desired replica count.
+    parameters:
+      lattice:
+        description: The lattice identifier
+        schema:
+          type: string
+      hostId:
+        description: The public key of the target wasmCloud host
+        schema:
+          type: string
+    publish:
+      operationId: scaleComponent
+      summary: Scale a component to a desired replica count on a host
+      description: >-
+        Publishes a scale command to start, stop, or adjust the replica count
+        of a WebAssembly component on the specified host. The component is
+        identified by its OCI image reference or component ID. Setting
+        replicas to 0 stops all running instances.
+      message:
+        $ref: '#/components/messages/ScaleComponentCommand'
+    subscribe:
+      operationId: receiveScaleResponse
+      summary: Receive scale command acknowledgment
+      description: >-
+        The host acknowledges receipt of the scale command. Actual scaling
+        is asynchronous; monitor host events for completion.
+      message:
+        $ref: '#/components/messages/CtlOperationAck'
+
+  wasmbus.ctl.v1.{lattice}.provider.start.{hostId}:
+    description: >-
+      Command channel for starting a capability provider on a specific
+      wasmCloud host. Providers are identified by their OCI image reference
+      and a link name that scopes their configuration.
+    parameters:
+      lattice:
+        description: The lattice identifier
+        schema:
+          type: string
+      hostId:
+        description: The public key of the target wasmCloud host
+        schema:
+          type: string
+    publish:
+      operationId: startProvider
+      summary: Start a capability provider on a host
+      description: >-
+        Publishes a start command to launch a capability provider on the
+        specified host. The provider is identified by its OCI image reference.
+        Provider startup is asynchronous; monitor host events for the
+        provider_started event.
+      message:
+        $ref: '#/components/messages/StartProviderCommand'
+    subscribe:
+      operationId: receiveStartProviderAck
+      summary: Receive start provider acknowledgment
+      description: >-
+        The host acknowledges receipt of the start provider command.
+      message:
+        $ref: '#/components/messages/CtlOperationAck'
+
+  wasmbus.ctl.v1.{lattice}.provider.stop.{hostId}:
+    description: >-
+      Command channel for stopping a running capability provider on a
+      specific wasmCloud host.
+    parameters:
+      lattice:
+        description: The lattice identifier
+        schema:
+          type: string
+      hostId:
+        description: The public key of the target wasmCloud host
+        schema:
+          type: string
+    publish:
+      operationId: stopProvider
+      summary: Stop a running capability provider on a host
+      description: >-
+        Publishes a stop command to shut down a specific capability provider
+        on the target host. The provider is identified by its provider ID
+        (public key).
+      message:
+        $ref: '#/components/messages/StopProviderCommand'
+    subscribe:
+      operationId: receiveStopProviderAck
+      summary: Receive stop provider acknowledgment
+      description: >-
+        The host acknowledges receipt of the stop provider command.
+      message:
+        $ref: '#/components/messages/CtlOperationAck'
+
+  wasmbus.ctl.v1.{lattice}.link.put:
+    description: >-
+      Command channel for creating a link between a wasmCloud component and
+      a capability provider. Links establish named connections with optional
+      configuration values that enable components to use provider capabilities.
+    parameters:
+      lattice:
+        description: The lattice identifier
+        schema:
+          type: string
+    publish:
+      operationId: putLink
+      summary: Create or update a component-to-provider link
+      description: >-
+        Publishes a link definition to connect a component to a capability
+        provider. The link includes the component ID, provider ID, contract
+        identifier, link name, and optional key-value configuration passed
+        to the provider at link time.
+      message:
+        $ref: '#/components/messages/PutLinkCommand'
+    subscribe:
+      operationId: receivePutLinkAck
+      summary: Receive put link acknowledgment
+      description: >-
+        Acknowledges that the link definition was accepted and is being
+        propagated to the appropriate host.
+      message:
+        $ref: '#/components/messages/CtlOperationAck'
+
+  wasmbus.ctl.v1.{lattice}.link.del:
+    description: >-
+      Command channel for removing an existing link between a component
+      and a capability provider.
+    parameters:
+      lattice:
+        description: The lattice identifier
+        schema:
+          type: string
+    publish:
+      operationId: deleteLink
+      summary: Remove a component-to-provider link
+      description: >-
+        Publishes a delete link command to remove the link between a component
+        and a capability provider identified by the combination of component ID,
+        provider contract, and link name.
+      message:
+        $ref: '#/components/messages/DeleteLinkCommand'
+    subscribe:
+      operationId: receiveDeleteLinkAck
+      summary: Receive delete link acknowledgment
+      description: >-
+        Acknowledges that the link deletion was accepted.
+      message:
+        $ref: '#/components/messages/CtlOperationAck'
+
+  wasmbus.ctl.v1.{lattice}.evt.{hostId}:
+    description: >-
+      Event stream published by wasmCloud hosts for observability. Hosts
+      emit structured CloudEvents-formatted events for all significant
+      lifecycle changes including component start/stop, provider start/stop,
+      link changes, and health check results.
+    parameters:
+      lattice:
+        description: The lattice identifier
+        schema:
+          type: string
+      hostId:
+        description: The public key of the host emitting events
+        schema:
+          type: string
+    subscribe:
+      operationId: receiveHostEvent
+      summary: Receive a wasmCloud host lifecycle event
+      description: >-
+        Receive CloudEvents-formatted event messages from a wasmCloud host.
+        Events cover component lifecycle (component_scaled, component_scale_failed),
+        provider lifecycle (provider_started, provider_start_failed, provider_stopped),
+        link changes (linkdef_set, linkdef_deleted), host lifecycle
+        (host_started, host_stopped, host_heartbeat), and configuration
+        updates.
+      message:
+        oneOf:
+          - $ref: '#/components/messages/ComponentScaledEvent'
+          - $ref: '#/components/messages/ProviderStartedEvent'
+          - $ref: '#/components/messages/ProviderStoppedEvent'
+          - $ref: '#/components/messages/LinkdefSetEvent'
+          - $ref: '#/components/messages/HostHeartbeatEvent'
+
+components:
+  securitySchemes:
+    natsCredentials:
+      type: userPassword
+      description: >-
+        NATS credentials file (.creds) for authenticating with the NATS server
+        using NKeys and JWT-based authentication. In a multi-tenant lattice
+        each lattice is scoped to a NATS account.
+  messages:
+    EmptyRequest:
+      name: EmptyRequest
+      title: Empty Request
+      summary: An empty request body used for query operations that require no parameters
+      contentType: application/json
+      payload:
+        type: object
+        description: Empty JSON object for query operations requiring no parameters.
+
+    HostSummaryResponse:
+      name: HostSummaryResponse
+      title: Host Summary Response
+      summary: Summary information about a wasmCloud host
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostSummary'
+
+    HostInventoryResponse:
+      name: HostInventoryResponse
+      title: Host Inventory Response
+      summary: Full inventory of components and providers running on a host
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostInventory'
+
+    ScaleComponentCommand:
+      name: ScaleComponentCommand
+      title: Scale Component Command
+      summary: Command to scale a WebAssembly component to a desired replica count
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ScaleComponentCommand'
+
+    StartProviderCommand:
+      name: StartProviderCommand
+      title: Start Provider Command
+      summary: Command to start a capability provider on a wasmCloud host
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StartProviderCommand'
+
+    StopProviderCommand:
+      name: StopProviderCommand
+      title: Stop Provider Command
+      summary: Command to stop a running capability provider on a wasmCloud host
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StopProviderCommand'
+
+    PutLinkCommand:
+      name: PutLinkCommand
+      title: Put Link Command
+      summary: Command to create or update a link between a component and a provider
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LinkDefinition'
+
+    DeleteLinkCommand:
+      name: DeleteLinkCommand
+      title: Delete Link Command
+      summary: Command to remove a link between a component and a provider
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/DeleteLinkCommand'
+
+    CtlOperationAck:
+      name: CtlOperationAck
+      title: Control Operation Acknowledgment
+      summary: Acknowledgment response for control interface commands
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CtlOperationAck'
+
+    ComponentScaledEvent:
+      name: ComponentScaledEvent
+      title: Component Scaled Event
+      summary: CloudEvent emitted when a component's replica count changes
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostEvent'
+
+    ProviderStartedEvent:
+      name: ProviderStartedEvent
+      title: Provider Started Event
+      summary: CloudEvent emitted when a capability provider successfully starts
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostEvent'
+
+    ProviderStoppedEvent:
+      name: ProviderStoppedEvent
+      title: Provider Stopped Event
+      summary: CloudEvent emitted when a capability provider stops
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostEvent'
+
+    LinkdefSetEvent:
+      name: LinkdefSetEvent
+      title: Link Definition Set Event
+      summary: CloudEvent emitted when a link definition is created or updated
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostEvent'
+
+    HostHeartbeatEvent:
+      name: HostHeartbeatEvent
+      title: Host Heartbeat Event
+      summary: Periodic heartbeat event emitted by each wasmCloud host
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostEvent'
+
+  schemas:
+    HostSummary:
+      type: object
+      description: >-
+        Summary information about a wasmCloud host participating in the lattice.
+      required:
+        - id
+        - uptime_seconds
+        - version
+      properties:
+        id:
+          type: string
+          description: >-
+            The public key (nkey) uniquely identifying this host in the lattice.
+        friendly_name:
+          type: string
+          description: Human-readable name assigned to the host for display purposes.
+        uptime_seconds:
+          type: integer
+          description: Number of seconds the host has been running.
+        version:
+          type: string
+          description: wasmCloud host version string, e.g. '0.82.0'.
+        labels:
+          type: object
+          description: >-
+            Key-value labels assigned to the host for scheduling and placement
+            constraints in wadm manifests.
+          additionalProperties:
+            type: string
+
+    HostInventory:
+      type: object
+      description: >-
+        Complete inventory of a wasmCloud host including all running components
+        and capability providers.
+      required:
+        - host_id
+        - components
+        - providers
+      properties:
+        host_id:
+          type: string
+          description: Public key of the host this inventory belongs to.
+        friendly_name:
+          type: string
+          description: Human-readable name of the host.
+        labels:
+          type: object
+          description: Host labels used for scheduling constraints.
+          additionalProperties:
+            type: string
+        components:
+          type: array
+          description: List of WebAssembly components currently running on this host.
+          items:
+            $ref: '#/components/schemas/ComponentDescription'
+        providers:
+          type: array
+          description: List of capability providers currently running on this host.
+          items:
+            $ref: '#/components/schemas/ProviderDescription'
+
+    ComponentDescription:
+      type: object
+      description: Description of a WebAssembly component running on a wasmCloud host.
+      required:
+        - id
+        - image_ref
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the component instance, typically a public key.
+        image_ref:
+          type: string
+          description: >-
+            OCI image reference of the component, e.g.
+            'ghcr.io/wasmcloud/components/http-hello-world:0.1.0'.
+        name:
+          type: string
+          description: Human-readable name of the component.
+        max_instances:
+          type: integer
+          description: Maximum number of concurrent instances of this component.
+        annotations:
+          type: object
+          description: Annotations applied to the component instance.
+          additionalProperties:
+            type: string
+
+    ProviderDescription:
+      type: object
+      description: Description of a capability provider running on a wasmCloud host.
+      required:
+        - id
+        - image_ref
+      properties:
+        id:
+          type: string
+          description: Provider ID, typically the provider's public key.
+        image_ref:
+          type: string
+          description: >-
+            OCI image reference of the provider, e.g.
+            'ghcr.io/wasmcloud/http-server:0.22.0'.
+        name:
+          type: string
+          description: Human-readable name of the capability provider.
+        annotations:
+          type: object
+          description: Annotations applied to the provider instance.
+          additionalProperties:
+            type: string
+
+    ScaleComponentCommand:
+      type: object
+      description: >-
+        Command to scale a WebAssembly component to a desired number of replicas
+        on a specific wasmCloud host.
+      required:
+        - component_ref
+        - component_id
+        - max_instances
+      properties:
+        component_ref:
+          type: string
+          description: >-
+            OCI image reference of the component to scale, e.g.
+            'ghcr.io/wasmcloud/components/http-hello-world:0.1.0'.
+        component_id:
+          type: string
+          description: >-
+            Unique identifier for the component. Used to distinguish multiple
+            instances of the same image with different configurations.
+        max_instances:
+          type: integer
+          minimum: 0
+          description: >-
+            Desired number of concurrent instances. Setting to 0 stops all
+            running instances of this component on the target host.
+        annotations:
+          type: object
+          description: Annotations to apply to the component instances.
+          additionalProperties:
+            type: string
+        config:
+          type: array
+          description: Named configuration references to pass to the component.
+          items:
+            type: string
+
+    StartProviderCommand:
+      type: object
+      description: Command to start a capability provider on a wasmCloud host.
+      required:
+        - provider_ref
+        - provider_id
+      properties:
+        provider_ref:
+          type: string
+          description: >-
+            OCI image reference of the capability provider, e.g.
+            'ghcr.io/wasmcloud/http-server:0.22.0'.
+        provider_id:
+          type: string
+          description: >-
+            Unique identifier for the provider instance. Scopes the provider
+            within the lattice.
+        annotations:
+          type: object
+          description: Annotations to apply to the started provider.
+          additionalProperties:
+            type: string
+        config:
+          type: array
+          description: Named configuration references to pass to the provider at startup.
+          items:
+            type: string
+
+    StopProviderCommand:
+      type: object
+      description: Command to stop a running capability provider on a wasmCloud host.
+      required:
+        - provider_id
+      properties:
+        provider_id:
+          type: string
+          description: >-
+            The provider ID of the running instance to stop.
+
+    LinkDefinition:
+      type: object
+      description: >-
+        A link definition connecting a wasmCloud component to a capability provider.
+        Links enable components to use provider capabilities and carry optional
+        configuration passed to the provider at link time.
+      required:
+        - source_id
+        - target
+        - name
+        - wit_namespace
+        - wit_package
+      properties:
+        source_id:
+          type: string
+          description: >-
+            Component ID of the source component that will use this link to
+            invoke capability provider operations.
+        target:
+          type: string
+          description: >-
+            Provider ID or component ID of the link target that will receive
+            invocations through this link.
+        name:
+          type: string
+          description: >-
+            Link name scoping this link within the lattice. Allows a component
+            to have multiple links to providers of the same interface using
+            different names.
+          default: default
+        wit_namespace:
+          type: string
+          description: >-
+            WIT namespace of the interface this link implements, e.g. 'wasi'.
+        wit_package:
+          type: string
+          description: >-
+            WIT package name of the interface this link implements, e.g.
+            'http' or 'keyvalue'.
+        interfaces:
+          type: array
+          description: >-
+            List of WIT interface names from the package that this link
+            covers, e.g. ['incoming-handler'].
+          items:
+            type: string
+        source_config:
+          type: array
+          description: Named configuration references provided to the source component.
+          items:
+            type: string
+        target_config:
+          type: array
+          description: Named configuration references provided to the target provider.
+          items:
+            type: string
+
+    DeleteLinkCommand:
+      type: object
+      description: Command to remove an existing link definition from the lattice.
+      required:
+        - source_id
+        - name
+        - wit_namespace
+        - wit_package
+      properties:
+        source_id:
+          type: string
+          description: Component ID of the source side of the link to delete.
+        name:
+          type: string
+          description: Link name of the link to delete.
+        wit_namespace:
+          type: string
+          description: WIT namespace of the interface the link implements.
+        wit_package:
+          type: string
+          description: WIT package name of the interface the link implements.
+
+    CtlOperationAck:
+      type: object
+      description: >-
+        Acknowledgment returned by a wasmCloud host in response to a control
+        interface command. Indicates whether the command was accepted; actual
+        completion is asynchronous and signalled via host events.
+      required:
+        - accepted
+      properties:
+        accepted:
+          type: boolean
+          description: >-
+            Whether the host accepted the command for processing. A false value
+            indicates the command was rejected, typically due to invalid parameters.
+        error:
+          type: string
+          description: >-
+            Human-readable error message when accepted is false, describing why
+            the command was rejected.
+
+    HostEvent:
+      type: object
+      description: >-
+        A CloudEvents-formatted event emitted by a wasmCloud host for observability.
+        Covers component and provider lifecycle changes, link definition changes,
+        heartbeats, and configuration updates.
+      required:
+        - specversion
+        - type
+        - source
+        - id
+        - time
+        - datacontenttype
+        - data
+      properties:
+        specversion:
+          type: string
+          const: '1.0'
+          description: CloudEvents spec version.
+        type:
+          type: string
+          description: >-
+            Event type identifier. Known values include com.wasmcloud.lattice.component_scaled,
+            com.wasmcloud.lattice.provider_started, com.wasmcloud.lattice.provider_stopped,
+            com.wasmcloud.lattice.linkdef_set, com.wasmcloud.lattice.linkdef_deleted,
+            com.wasmcloud.lattice.host_heartbeat, com.wasmcloud.lattice.host_started,
+            com.wasmcloud.lattice.host_stopped.
+          examples:
+            - com.wasmcloud.lattice.component_scaled
+            - com.wasmcloud.lattice.provider_started
+            - com.wasmcloud.lattice.host_heartbeat
+        source:
+          type: string
+          description: >-
+            URI identifying the host that emitted this event. Typically the
+            host public key prefixed with a scheme.
+        id:
+          type: string
+          description: Unique identifier for this event instance.
+        time:
+          type: string
+          format: date-time
+          description: Timestamp when the event occurred.
+        datacontenttype:
+          type: string
+          const: application/json
+          description: Content type of the event data field.
+        data:
+          type: object
+          description: >-
+            Event-specific payload. Structure varies by event type and contains
+            the relevant entity details (component ID, provider ID, etc.).
+          additionalProperties: true

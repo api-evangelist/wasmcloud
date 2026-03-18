@@ -1,0 +1,332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/api-evangelist/wasmcloud/blob/main/json-schema/wasmcloud-oam-manifest-schema.json",
+  "title": "wasmCloud OAM Application Manifest",
+  "description": "JSON Schema for wasmCloud application manifests conforming to the Open Application Model (OAM) v1beta1 specification. A manifest declares WebAssembly components and capability providers along with their scaling traits and link definitions. Manifests are stored in and deployed by the wasmCloud Application Deployment Manager (wadm).",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "description": "The OAM API version. Must be core.oam.dev/v1beta1 for wasmCloud applications.",
+      "enum": ["core.oam.dev/v1beta1"]
+    },
+    "kind": {
+      "type": "string",
+      "description": "The manifest resource kind. Always Application for wasmCloud OAM manifests.",
+      "enum": ["Application"]
+    },
+    "metadata": {
+      "$ref": "#/$defs/ApplicationMetadata"
+    },
+    "spec": {
+      "$ref": "#/$defs/ApplicationSpec"
+    }
+  },
+  "$defs": {
+    "ApplicationMetadata": {
+      "type": "object",
+      "description": "Metadata for the wasmCloud application including its name, version, and descriptive annotations.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The unique name of the application within the wasmCloud lattice. Used as the primary identifier in wadm operations.",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_\\-]*$",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "annotations": {
+          "type": "object",
+          "description": "Key-value annotations providing versioning and descriptive metadata for the application.",
+          "properties": {
+            "version": {
+              "type": "string",
+              "description": "Semantic version of this application manifest version (e.g., v0.0.1). Used by wadm to track version history.",
+              "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+].+)?$"
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of the application's purpose and functionality.",
+              "maxLength": 1024
+            }
+          },
+          "additionalProperties": {
+            "type": "string",
+            "description": "Additional annotation key-value pairs."
+          }
+        }
+      }
+    },
+    "ApplicationSpec": {
+      "type": "object",
+      "description": "The application specification containing all component and provider definitions with their associated traits.",
+      "required": ["components"],
+      "properties": {
+        "components": {
+          "type": "array",
+          "description": "Array of component definitions that make up the application. Each entry defines a WebAssembly component or capability provider and its runtime traits.",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ComponentDefinition"
+          }
+        }
+      }
+    },
+    "ComponentDefinition": {
+      "type": "object",
+      "description": "A component definition in the application spec representing either a WebAssembly component (actor) or a capability provider.",
+      "required": ["name", "type", "properties"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique name for this component within the application manifest. Referenced by link traits to connect components to providers.",
+          "minLength": 1,
+          "maxLength": 63
+        },
+        "type": {
+          "type": "string",
+          "description": "The component type. Use 'component' for WebAssembly components and 'capability' for capability providers.",
+          "enum": ["component", "capability"]
+        },
+        "properties": {
+          "$ref": "#/$defs/ComponentProperties"
+        },
+        "traits": {
+          "type": "array",
+          "description": "Optional list of traits controlling scaling behavior and link connections for this component.",
+          "items": {
+            "$ref": "#/$defs/ComponentTrait"
+          }
+        }
+      }
+    },
+    "ComponentProperties": {
+      "type": "object",
+      "description": "Properties for a wasmCloud component or capability provider defining its image source and optional startup configuration.",
+      "required": ["image"],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "OCI image reference pointing to the component or provider artifact. Can reference an OCI registry (e.g., ghcr.io/wasmcloud/http-server:0.21.0) or a local file path prefixed with 'file://'."
+        },
+        "id": {
+          "type": "string",
+          "description": "Optional explicit component ID override. If omitted, wadm generates a deterministic ID from the application name and component name.",
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "config": {
+          "type": "array",
+          "description": "Optional list of named configuration entries passed to the component at startup. Configurations can be inline key-value pairs or references to named configs stored in the lattice.",
+          "items": {
+            "$ref": "#/$defs/ConfigReference"
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "description": "Optional list of secret references that the component can access through the wasmCloud secrets API.",
+          "items": {
+            "$ref": "#/$defs/SecretReference"
+          }
+        }
+      }
+    },
+    "ConfigReference": {
+      "type": "object",
+      "description": "A named configuration entry either referencing an existing lattice config by name or providing inline key-value configuration.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the configuration entry, either referencing a pre-existing lattice config or used as a label for inline properties."
+        },
+        "properties": {
+          "type": "object",
+          "description": "Inline configuration key-value pairs. If provided, these are set in the lattice config store under the given name.",
+          "additionalProperties": {
+            "type": "string",
+            "description": "A configuration value string."
+          }
+        }
+      }
+    },
+    "SecretReference": {
+      "type": "object",
+      "description": "A reference to a secret stored in the wasmCloud secret store that the component is authorized to access.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the secret reference as it will be presented to the component."
+        },
+        "source": {
+          "type": "object",
+          "description": "Configuration identifying the secret backend and secret path.",
+          "properties": {
+            "policy": {
+              "type": "string",
+              "description": "The name of the secret backend policy to use for fetching the secret."
+            },
+            "key": {
+              "type": "string",
+              "description": "The key or path of the secret within the backend store."
+            },
+            "field": {
+              "type": "string",
+              "description": "Optional field name within a structured secret value."
+            },
+            "version": {
+              "type": "string",
+              "description": "Optional version of the secret to use."
+            }
+          }
+        }
+      }
+    },
+    "ComponentTrait": {
+      "type": "object",
+      "description": "A trait definition applied to a component controlling its runtime behavior. The two built-in wasmCloud trait types are spreadscaler (for replica count and host affinity) and link (for connecting to other components and providers).",
+      "required": ["type", "properties"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Trait type identifier. Built-in types are 'spreadscaler' and 'link'.",
+          "enum": ["spreadscaler", "link"]
+        },
+        "properties": {
+          "description": "Trait-specific configuration properties.",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SpreadScalerProperties"
+            },
+            {
+              "$ref": "#/$defs/LinkProperties"
+            }
+          ]
+        }
+      }
+    },
+    "SpreadScalerProperties": {
+      "type": "object",
+      "description": "Properties for the spreadscaler trait controlling replica count and distribution across hosts. Wadm's reconciler uses this to ensure the specified number of instances are running and distributed according to host affinity rules.",
+      "properties": {
+        "instances": {
+          "type": "integer",
+          "description": "Total number of component instances to maintain running across the lattice. Wadm will compensate if the actual count diverges from this target.",
+          "minimum": 0,
+          "default": 1
+        },
+        "spread": {
+          "type": "array",
+          "description": "Optional list of host affinity rules distributing instances across hosts with matching labels. If omitted, instances are placed on any available hosts.",
+          "items": {
+            "$ref": "#/$defs/SpreadRequirement"
+          }
+        }
+      }
+    },
+    "SpreadRequirement": {
+      "type": "object",
+      "description": "A spread requirement specifying host label requirements and the proportional weight of instances to schedule on matching hosts.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Descriptive name for this spread requirement, used in status reporting."
+        },
+        "requirements": {
+          "type": "object",
+          "description": "Key-value host label requirements. A host must have all specified labels to be eligible for instances from this requirement.",
+          "additionalProperties": {
+            "type": "string",
+            "description": "Required label value."
+          }
+        },
+        "weight": {
+          "type": "integer",
+          "description": "Relative weight determining the proportion of total instances placed on hosts matching this requirement. Weights are normalized across all spread requirements.",
+          "minimum": 1
+        }
+      }
+    },
+    "LinkProperties": {
+      "type": "object",
+      "description": "Properties for the link trait establishing a WIT-interface-based connection from this component to a target component or capability provider.",
+      "required": ["target"],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The WIT interface namespace for this link (e.g., 'wasi', 'wasmcloud'). Together with package and interfaces, this identifies the WIT contract being fulfilled."
+        },
+        "package": {
+          "type": "string",
+          "description": "The WIT interface package for this link (e.g., 'http', 'keyvalue', 'blobstore', 'messaging')."
+        },
+        "interfaces": {
+          "type": "array",
+          "description": "List of WIT interface names included in this link.",
+          "items": {
+            "type": "string",
+            "description": "A WIT interface name (e.g., 'incoming-handler', 'handler', 'atomics')."
+          }
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional name for this link definition. Allows multiple links to the same interface with different configurations.",
+          "default": "default"
+        },
+        "target": {
+          "$ref": "#/$defs/LinkTarget"
+        },
+        "source": {
+          "$ref": "#/$defs/LinkSource"
+        }
+      }
+    },
+    "LinkTarget": {
+      "type": "object",
+      "description": "The target end of a link definition specifying which component or provider to connect to.",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the target component as defined in the spec.components array. This must match the 'name' field of another component in the same manifest."
+        },
+        "config": {
+          "type": "array",
+          "description": "Configuration entries passed to the target component through this link.",
+          "items": {
+            "$ref": "#/$defs/ConfigReference"
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "description": "Secret references accessible to the target through this link.",
+          "items": {
+            "$ref": "#/$defs/SecretReference"
+          }
+        }
+      }
+    },
+    "LinkSource": {
+      "type": "object",
+      "description": "Optional configuration for the source end of a link definition.",
+      "properties": {
+        "config": {
+          "type": "array",
+          "description": "Configuration entries passed to the source component through this link.",
+          "items": {
+            "$ref": "#/$defs/ConfigReference"
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "description": "Secret references accessible to the source through this link.",
+          "items": {
+            "$ref": "#/$defs/SecretReference"
+          }
+        }
+      }
+    }
+  }
+}
