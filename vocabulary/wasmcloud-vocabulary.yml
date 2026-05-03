@@ -1,0 +1,139 @@
+vocabulary:
+  name: wasmCloud Vocabulary
+  description: >-
+    Domain vocabulary for wasmCloud, the CNCF incubating platform for building
+    and running distributed applications with WebAssembly components. Covers
+    runtime concepts, deployment patterns, and lattice management operations.
+  version: '1.0'
+  created: '2026-05-03'
+  modified: '2026-05-03'
+  tags:
+    - Cloud Native
+    - CNCF
+    - WebAssembly
+    - WIT
+  terms:
+    - term: Lattice
+      definition: >-
+        A flat, self-forming, self-healing mesh network of wasmCloud hosts that
+        communicate over NATS. The lattice provides the distributed substrate
+        for running WebAssembly components and capability providers. Each
+        lattice is scoped to a NATS account.
+      tags:
+        - Core Concept
+        - Networking
+    - term: Component
+      definition: >-
+        A WebAssembly component that encapsulates portable business logic. In
+        wasmCloud, components are identified by OCI image references and run
+        as concurrently-scalable instances on hosts. Components declare their
+        capabilities using WIT interfaces.
+      tags:
+        - Core Concept
+        - WebAssembly
+    - term: Capability Provider
+      definition: >-
+        A host-native plugin that implements one or more WIT interface packages
+        to provide infrastructure capabilities (HTTP server, key-value store,
+        messaging, blobstore, etc.) to components. Providers are identified
+        by OCI image references and run as singleton processes per host.
+      tags:
+        - Core Concept
+        - Capabilities
+    - term: Link Definition
+      definition: >-
+        A named association between a component and a capability provider (or
+        another component) that grants the source component permission to call
+        the target's interfaces. Links carry optional configuration values
+        passed to the target at link time. Links are scoped by WIT namespace,
+        package, and link name.
+      tags:
+        - Core Concept
+        - Security
+    - term: Host
+      definition: >-
+        A wasmCloud runtime process that manages the lifecycle of components
+        and capability providers within a lattice. Hosts are identified by
+        NKey public keys and can be labelled for scheduling constraints.
+      tags:
+        - Runtime
+    - term: wadm
+      definition: >-
+        wasmCloud Application Deployment Manager — the declarative GitOps
+        reconciler for wasmCloud. wadm reads OAM application manifests and
+        continuously reconciles the actual lattice state against the declared
+        desired state, handling scaling, upgrades, and self-healing.
+      tags:
+        - Tooling
+        - Deployment
+    - term: wash
+      definition: >-
+        WAsmcloud SHell — the primary CLI tool for wasmCloud development and
+        operations. wash bundles a local wasmCloud host, NATS server, and wadm
+        for development, and provides commands to build, deploy, and manage
+        applications and components.
+      tags:
+        - Tooling
+        - CLI
+    - term: WIT
+      definition: >-
+        WebAssembly Interface Types — the interface definition language used
+        to describe the APIs that WebAssembly components import and export.
+        WIT packages group related interfaces (e.g., wasi:http, wasi:keyvalue)
+        and form the contract between components and capability providers.
+      tags:
+        - Standard
+        - Interfaces
+    - term: WASI
+      definition: >-
+        WebAssembly System Interface — a family of standardized WIT interface
+        packages maintained by the W3C WebAssembly Community Group. WASI 0.2
+        (the Component Model) is the foundation for wasmCloud's portability
+        guarantees. Includes wasi:http, wasi:keyvalue, wasi:blobstore, and more.
+      tags:
+        - Standard
+        - Interfaces
+    - term: OAM
+      definition: >-
+        Open Application Model — a vendor-neutral, runtime-agnostic application
+        specification format originally developed by Microsoft and Alibaba.
+        wasmCloud uses the OAM Application and Component kinds in wadm manifests
+        to define distributed application topology.
+      tags:
+        - Standard
+        - Deployment
+    - term: Lattice Control Interface
+      definition: >-
+        The NATS-based request/reply API that operators and tooling use to
+        control wasmCloud hosts. Published on well-known subjects under
+        wasmbus.ctl.v1.{lattice}. Supports querying hosts, scaling components,
+        starting/stopping providers, and managing link definitions.
+      tags:
+        - API
+        - NATS
+    - term: Spread Scaler
+      definition: >-
+        An OAM trait that specifies how many replicas of a component or provider
+        should run and across which hosts (using label constraints). wadm uses
+        spread scalers to distribute workloads according to placement policies.
+      tags:
+        - Deployment
+        - Scaling
+    - term: NKey
+      definition: >-
+        Ed25519-based cryptographic key pair used throughout wasmCloud for
+        identity. Hosts, components, and operators are all identified by NKey
+        public keys. NKeys provide both identity and signing capability without
+        requiring certificates.
+      tags:
+        - Security
+        - Identity
+    - term: CloudEvent
+      definition: >-
+        A CNCF-standard event format used for wasmCloud host event emissions.
+        Events such as component_scaled, provider_started, and host_heartbeat
+        are emitted on the lattice event stream (wasmbus.ctl.v1.{lattice}.evt.{hostId})
+        in CloudEvents format for observability and integration.
+      tags:
+        - Observability
+        - CNCF

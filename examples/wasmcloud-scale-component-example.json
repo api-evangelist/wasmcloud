@@ -1,0 +1,15 @@
+{
+  "summary": "wasmCloud Scale Component Command",
+  "description": "Example NATS message payload to scale a WebAssembly component to 3 replicas on a specific wasmCloud host via the control interface",
+  "subject": "wasmbus.ctl.v1.{lattice}.component.scale.{hostId}",
+  "example": {
+    "component_ref": "ghcr.io/wasmcloud/components/http-hello-world:0.1.0",
+    "component_id": "http-hello-world",
+    "max_instances": 3,
+    "annotations": {
+      "app": "hello-world",
+      "version": "v0.1.0"
+    },
+    "config": ["default-config"]
+  }
+}

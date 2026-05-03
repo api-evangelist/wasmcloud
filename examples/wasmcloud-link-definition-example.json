@@ -1,0 +1,15 @@
+{
+  "summary": "wasmCloud Link Definition",
+  "description": "Example link definition connecting a WebAssembly component to the HTTP server capability provider using WIT interfaces",
+  "subject": "wasmbus.ctl.v1.{lattice}.link.put",
+  "example": {
+    "source_id": "http-hello-world",
+    "target": "http-server",
+    "name": "default",
+    "wit_namespace": "wasi",
+    "wit_package": "http",
+    "interfaces": ["incoming-handler"],
+    "source_config": [],
+    "target_config": ["listen-config"]
+  }
+}

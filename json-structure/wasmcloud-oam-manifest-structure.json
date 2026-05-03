@@ -1,0 +1,85 @@
+{
+  "name": "wasmCloud OAM Application Manifest",
+  "description": "Structure of a wasmCloud application manifest in Open Application Model (OAM) format consumed by wadm",
+  "type": "object",
+  "fields": [
+    {
+      "name": "apiVersion",
+      "type": "string",
+      "required": true,
+      "description": "OAM API version - must be core.oam.dev/v1beta1",
+      "example": "core.oam.dev/v1beta1"
+    },
+    {
+      "name": "kind",
+      "type": "string",
+      "required": true,
+      "description": "OAM resource kind - must be Application",
+      "example": "Application"
+    },
+    {
+      "name": "metadata",
+      "type": "object",
+      "required": true,
+      "description": "Application metadata including name and annotations",
+      "fields": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "Unique application name in the lattice"
+        },
+        {
+          "name": "annotations",
+          "type": "object",
+          "required": false,
+          "description": "Key-value annotations for version and description"
+        }
+      ]
+    },
+    {
+      "name": "spec",
+      "type": "object",
+      "required": true,
+      "description": "Application specification listing all components",
+      "fields": [
+        {
+          "name": "components",
+          "type": "array",
+          "required": true,
+          "description": "List of components, providers, and their traits",
+          "items": {
+            "type": "object",
+            "fields": [
+              {
+                "name": "name",
+                "type": "string",
+                "required": true,
+                "description": "Unique component name within the application"
+              },
+              {
+                "name": "type",
+                "type": "string",
+                "required": true,
+                "description": "Component type: component or capability",
+                "enum": ["component", "capability"]
+              },
+              {
+                "name": "properties",
+                "type": "object",
+                "required": true,
+                "description": "Component properties including OCI image reference"
+              },
+              {
+                "name": "traits",
+                "type": "array",
+                "required": false,
+                "description": "List of traits such as spreadscaler and link definitions"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
