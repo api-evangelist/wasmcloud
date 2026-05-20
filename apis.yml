@@ -151,6 +151,8 @@ apis:
       - Operator
       - Deployment
 common:
+  - type: LinkedIn
+    url: https://www.linkedin.com/company/wasmcloud
   - type: Website
     url: https://wasmcloud.com
   - type: Documentation
