@@ -197,6 +197,8 @@ common:
     url: crd/runtime.wasmcloud.dev_workloaddeployments.yaml
   - type: KubernetesCRD
     url: crd/runtime.wasmcloud.dev_workloadreplicasets.yaml
+  - type: LLMsTxt
+    url: https://wasmcloud.com/llms.txt
 maintainers:
   - FN: Kin Lane
     email: kin@apievangelist.com
