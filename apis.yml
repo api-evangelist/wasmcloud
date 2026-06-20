@@ -9,7 +9,7 @@ description: >-
   and databases through a declarative linking model based on WebAssembly
   Interface Types (WIT).
 url: https://wasmcloud.com
-image: https://kinlane-productions2.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
 tags:
   - Cloud Native
   - CNCF
@@ -33,7 +33,7 @@ apis:
       host inventories, and managing application deployments. The wash CLI
       and wasmCloud dashboard interact with hosts through this interface.
     humanURL: https://wasmcloud.com/docs/hosts/lattice-protocols/control-interface/
-    image: https://kinlane-productions2.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+    image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
     properties:
       - type: Documentation
         url: https://wasmcloud.com/docs/hosts/lattice-protocols/control-interface/
@@ -56,7 +56,7 @@ apis:
       of applications across the lattice, handling scaling, updates, and
       self-healing through reconciliation loops using the Open Application Model format.
     humanURL: https://wasmcloud.com/docs/ecosystem/wadm/
-    image: https://kinlane-productions2.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+    image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
     properties:
       - type: Documentation
         url: https://wasmcloud.com/docs/ecosystem/wadm/
@@ -84,7 +84,7 @@ apis:
       for local development, and supports publishing components to OCI registries
       and managing remote lattices.
     humanURL: https://wasmcloud.com/docs/cli/wash/
-    image: https://kinlane-productions2.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+    image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
     properties:
       - type: Documentation
         url: https://wasmcloud.com/docs/cli/wash/
@@ -107,7 +107,7 @@ apis:
       as well as wasmCloud-specific interfaces for capability providers covering
       HTTP, messaging, key-value, blobstore, and other infrastructure concerns.
     humanURL: https://wasmcloud.com/docs/concepts/interfaces/
-    image: https://kinlane-productions2.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+    image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
     properties:
       - type: Documentation
         url: https://wasmcloud.com/docs/concepts/interfaces/
@@ -130,7 +130,7 @@ apis:
       and GitOps workflows. Defines CRDs for Hosts, Artifacts, Workloads,
       WorkloadDeploments, and WorkloadReplicaSets under the runtime.wasmcloud.dev group.
     humanURL: https://wasmcloud.com/docs/deployment/k8s/
-    image: https://kinlane-productions2.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+    image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
     properties:
       - type: Documentation
         url: https://wasmcloud.com/docs/deployment/k8s/
