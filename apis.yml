@@ -151,6 +151,8 @@ apis:
       - Operator
       - Deployment
 common:
+  - type: DomainSecurity
+    url: security/wasmcloud-domain-security.yml
   - type: LinkedIn
     url: https://www.linkedin.com/company/wasmcloud
   - type: Website
