@@ -163,6 +163,9 @@ apis:
       - Operator
       - Deployment
 common:
+  - type: License
+    name: Apache-2.0
+    url: https://github.com/wasmCloud/wadm/blob/main/LICENSE
   - type: DomainSecurity
     url: security/wasmcloud-domain-security.yml
   - type: LinkedIn
