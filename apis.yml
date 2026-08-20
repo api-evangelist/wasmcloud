@@ -23,6 +23,15 @@ accessModel:
   method: derived
 image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/icons/wasmcloud.png
 tags:
+  - Cloud-Native
+  - CNCF
+  - Distributed Systems
+  - Incubating
+  - Runtime
+  - Wasm
+  - WebAssembly
+  - WIT
+tags_raw:
   - Cloud Native
   - CNCF
   - Distributed Systems
