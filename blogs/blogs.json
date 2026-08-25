@@ -5,7 +5,7 @@
       "source": "https://wasmcloud.com/blog/atom.xml",
       "feed_url": "https://wasmcloud.com/blog/atom.xml",
       "title": "",
-      "saved": 1,
+      "saved": 0,
       "method": "feed"
     },
     {
@@ -13,10 +13,9 @@
       "feed_url": "https://wasmcloud.com/docs/getting-started/",
       "title": "",
       "saved": 0,
-      "method": "none",
-      "error": "parse_failed"
+      "method": "none"
     }
   ],
   "post_count": 31,
-  "fetched": "2026-08-15T12:11:08Z"
+  "fetched": "2026-08-22T20:20:02Z"
 }
