@@ -186,6 +186,12 @@ apis:
       - Operator
       - Deployment
 common:
+  - type: Plans
+    url: plans/wasmcloud-plans-pricing.yml
+  - type: RateLimits
+    url: rate-limits/wasmcloud-rate-limits.yml
+  - type: FinOps
+    url: finops/wasmcloud-finops.yml
   - type: IssueTracker
     url: https://github.com/wasmCloud/wadm/issues
   - type: Releases
