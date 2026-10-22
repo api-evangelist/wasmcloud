@@ -41,3 +41,33 @@
     detected: '2026-10-19'
   status: not-a-workflow
   arazzo: null
+- slug: wasmcloud-winget-windows-package-manager
+  label: winget (Windows Package Manager)
+  partner_name: winget (Windows Package Manager)
+  category: official CLI (winget (Windows Package Manager))
+  type: register
+  channel: package-registry
+  evidence: https://github.com/microsoft/winget-pkgs/tree/master/manifests/w/wasmCloud/wash
+  source: edge
+  relationship: distribution-channel
+  contract_reference:
+    register: winget (Windows Package Manager) (public package index)
+    spec_file: null
+    packages:
+    - name: wasmCloud.wash
+      kind: manifest
+      version: 2.10.3
+      released: '2026-10-02'
+      lapsed: false
+      page: https://github.com/microsoft/winget-pkgs/tree/master/manifests/w/wasmCloud/wash
+      cli: 'winget: The wasmCloud Shell (wash) - a CLI for building, running, and managing WebAssemb'
+      repo_leg: domain:wasmcloud.com
+      publisher_leg: artifact-github-org:wasmcloud
+      matched_by: domain
+    current: true
+    signal_note: 'the provider''s own command-line tool on a package manager: distribution, not an integration;
+      lapsed = no release in 24 months or deprecated / disabled by the manager'
+    detected_by: sweep-official-clis.py
+    detected: '2026-10-20'
+  status: not-a-workflow
+  arazzo: null
